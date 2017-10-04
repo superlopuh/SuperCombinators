@@ -33,7 +33,7 @@ print(int.parse("-123")! + int.parse("321")!)
 
 // generalizing signed numbers
 
-func signed<Signed: SignedNumber>(_ unsigned: Parser<Signed>) -> Parser<Signed> {
+func signed<Signed: SignedNumeric>(_ unsigned: Parser<Signed>) -> Parser<Signed> {
     return unsigned || ("-" & unsigned).map { -$0 }
 }
 
