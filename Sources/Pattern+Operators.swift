@@ -24,11 +24,11 @@ extension Pattern {
         precondition(0 <= length, "Can't expect a negative length")
         return Pattern { text in
             guard
-                let suffixIndex = self.parsePrefix(text),
-                length == text.distance(from: text.startIndex, to: suffixIndex)
+                let result = self.parsePrefix(text),
+                length == text.distance(from: text.startIndex, to: result.rest.startIndex)
                 else { return nil }
 
-            return suffixIndex
+            return result
         }
     }
 
@@ -38,15 +38,15 @@ extension Pattern {
     public func count(_ number: Int) -> Pattern {
         precondition(0 <= number, "Can't invoke parser negative number of times")
         return Pattern { text in
-            var suffixIndex = text.startIndex
+            var rest = text[...]
 
             for _ in 0 ..< number {
-                guard let next = self.parseSuffix(of: text, after: suffixIndex) else { return nil }
-                suffixIndex = next
-                guard suffixIndex != text.endIndex else { break }
+                guard let next = self.parsePrefix(rest) else { return nil }
+                rest = next.rest
+                guard !rest.isEmpty else { break }
             }
 
-            return suffixIndex
+            return Result(rest: rest)
         }
     }
 
@@ -55,14 +55,14 @@ extension Pattern {
     */
     public func zeroOrMore() -> Pattern {
         return Pattern { text in
-            var suffixIndex = text.startIndex
+            var rest = text[...]
 
-            while let next = self.parseSuffix(of: text, after: suffixIndex) {
-                suffixIndex = next
-                guard suffixIndex != text.endIndex else { break }
+            while let next = self.parsePrefix(rest) {
+                rest = next.rest
+                guard !rest.isEmpty else { break }
             }
 
-            return suffixIndex
+            return Result(rest: rest)
         }
     }
     
@@ -71,14 +71,14 @@ extension Pattern {
     */
     public func oneOrMore() -> Pattern {
         return Pattern { text in
-            guard var suffixIndex = self.parsePrefix(text) else { return nil }
+            guard var result = self.parsePrefix(text) else { return nil }
 
-            while let next = self.parseSuffix(of: text, after: suffixIndex) {
-                suffixIndex = next
-                guard suffixIndex != text.endIndex else { break }
+            while let next = self.parsePrefix(result.rest) {
+                result = next
+                guard !result.rest.isEmpty else { break }
             }
 
-            return suffixIndex
+            return result
         }
     }
 }

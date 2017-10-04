@@ -11,14 +11,34 @@ postfix operator +
 
 protocol PatternProtocol: class {
 
-    associatedtype Result
+    associatedtype Value
 
-    var parsePrefix: (String) -> Result? { get }
+    var parsePrefix: (Substring) -> Parse<Value>? { get }
 
-    init(parsePrefix: @escaping (String) -> Result?)
+    init(parsePrefix: @escaping (Substring) -> Parse<Value>?)
+}
 
-    static func extractSuffixIndex(from result: Result) -> String.Index
-    static func result(_ result: Result, with newSuffixIndex: String.Index) -> Result
+extension Pattern: PatternProtocol {
+    typealias Value = ()
+}
+
+extension Parser: PatternProtocol {}
+
+extension PatternProtocol {
+    
+    func then<Other: PatternProtocol>(_ other: Other) -> Parser<(Value, Other.Value)> {
+        return Parser<(Value, Other.Value)> { text in
+            guard
+                let r0 = self.parsePrefix(text),
+                let r1 = other.parsePrefix(r0.rest)
+                else { return nil }
+            
+            return Parse<(Value, Other.Value)>(
+                value: (r0.value, r1.value),
+                rest: r1.rest
+            )
+        }
+    }
 }
 
 extension PatternProtocol {
@@ -29,10 +49,9 @@ extension PatternProtocol {
     public var stringParser: Parser<String> {
         return Parser<String> { text in
             guard let result = self.parsePrefix(text) else { return nil }
-            let suffixIndex = Self.extractSuffixIndex(from: result)
-            return ParseResult<String>(
-                value: String(text[..<suffixIndex]),
-                suffixIndex: suffixIndex
+            return Parse<String>(
+                value: String(text[..<result.rest.startIndex]),
+                rest: result.rest
             )
         }
     }
@@ -43,8 +62,8 @@ extension PatternProtocol {
      Otherwise, attempt using right-hand pattern.
     */
     public func matches(_ text: String) -> Bool {
-        guard let result = parsePrefix(text) else { return false }
-        return text.endIndex == Self.extractSuffixIndex(from: result)
+        guard let result = parsePrefix(text[...]) else { return false }
+        return result.rest.isEmpty
     }
 
     public func or(_ other: Self) -> Self {
@@ -58,44 +77,5 @@ extension PatternProtocol {
             }
             return nil
         }
-    }
-}
-
-extension Parser: PatternProtocol {
-
-    static func extractSuffixIndex(from result: Parser<Value>.Result) -> String.Index {
-        return result.suffixIndex
-    }
-
-    static func result(_ result: Result, with newSuffixIndex: String.Index) -> Parser<Value>.Result {
-        return Result(value: result.value, suffixIndex: newSuffixIndex)
-    }
-}
-
-extension Pattern: PatternProtocol {
-
-    typealias Result = String.Index
-
-    static func extractSuffixIndex(from result: String.CharacterView.Index) -> String.Index {
-        return result
-    }
-
-    static func result(_ result: String.CharacterView.Index, with newSuffixIndex: String.Index) -> String.CharacterView.Index {
-        return newSuffixIndex
-    }
-}
-
-extension PatternProtocol {
-
-    func parseSuffix(of text: String, after substringIndex: String.Index) -> Result? {
-        let substring = String(text[substringIndex...])
-        guard let result = parsePrefix(substring) else { return nil }
-        let firstSuffixIndex = Self.extractSuffixIndex(from: result)
-        let suffixIndex0 = String.UTF16View.Index(firstSuffixIndex, within: substring.utf16)!
-        let substringPrefixDistance = substring.utf16.distance(from: substring.utf16.startIndex, to: suffixIndex0)
-        let substringIndex = String.UTF16View.Index(substringIndex, within: text.utf16)!
-        let newSuffixIndexUTF16 = text.utf16.index(substringIndex, offsetBy: substringPrefixDistance)
-        let newSuffixIndex = newSuffixIndexUTF16.samePosition(in: text) ?? text.endIndex
-        return Self.result(result, with: newSuffixIndex)
     }
 }

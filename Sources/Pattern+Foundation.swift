@@ -16,11 +16,16 @@ extension Pattern {
     public static func characters(notIn characterSet: CharacterSet) -> Pattern {
         return Pattern { text in
             guard !text.isEmpty else { return nil }
-            guard let range = text.rangeOfCharacter(from: characterSet) else {
-                return text.endIndex
+            let copy = String(text)
+            guard let range = copy.rangeOfCharacter(from: characterSet) else {
+                return Result(rest: text[text.endIndex...])
             }
-            guard text.startIndex != range.lowerBound else { return nil }
-            return range.lowerBound
+            guard copy.startIndex != range.lowerBound else { return nil }
+            let index = text.index(
+                text.startIndex,
+                offsetBy: copy.distance(from: copy.startIndex, to: range.lowerBound)
+            )
+            return Result(rest: text[index...])
         }
     }
 
@@ -42,7 +47,7 @@ extension Pattern {
             if let _ = prefix.rangeOfCharacter(from: characterSet) {
                 return nil
             } else {
-                return suffixIndex
+                return Result(rest: text[suffixIndex...])
             }
         }
     }
@@ -52,13 +57,13 @@ extension Pattern {
      */
     public convenience init(regularExpression: NSRegularExpression) {
         self.init { text in
-            let optionalRange = text.range(
+            let _range = text.range(
                 of: regularExpression.pattern,
                 options: .regularExpression
             )
-            guard let range = optionalRange else { return nil }
+            guard let range = _range else { return nil }
             assert(range.lowerBound == text.startIndex)
-            return range.upperBound
+            return Result(rest: text[range.upperBound...])
         }
     }
 }

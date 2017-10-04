@@ -11,12 +11,14 @@
 */
 public final class Pattern {
 
+    public typealias Result = Parse<()>
+    
     /**
      Parses a prefix of a string, returning the prefix's end index on success.
     */
-    public let parsePrefix: (String) -> String.Index?
+    public let parsePrefix: (Substring) -> Result?
 
-    public init(parsePrefix: @escaping (String) -> String.Index?) {
+    public init(parsePrefix: @escaping (Substring) -> Result?) {
         self.parsePrefix = parsePrefix
     }
 }
@@ -28,7 +30,7 @@ extension Parser {
     */
     public var pattern: Pattern {
         return Pattern { text in
-            return self.parsePrefix(text)?.suffixIndex
+            return self.parsePrefix(text)?.map { _ in () }
         }
     }
 
@@ -37,8 +39,7 @@ extension Parser {
     */
     public convenience init(_ pattern: Pattern, _ value: Value) {
         self.init { text in
-            guard let suffixIndex = pattern.parsePrefix(text) else { return nil }
-            return Result(value: value, suffixIndex: suffixIndex)
+            return pattern.parsePrefix(text)?.map { _ in value }
         }
     }
 
@@ -54,15 +55,18 @@ extension Parser {
             let combined = separator & self
 
             var values = [first.value]
-            var suffixIndex = first.suffixIndex
+            var rest = first.rest
 
-            while let next = combined.parseSuffix(of: text, after: suffixIndex) {
+            while let next = combined.parsePrefix(rest) {
                 values.append(next.value)
-                suffixIndex = next.suffixIndex
-                guard suffixIndex != text.endIndex else { break }
+                rest = next.rest
+                guard !rest.isEmpty else { break }
             }
 
-            return ParseResult<[Value]>(value: values, suffixIndex: suffixIndex)
+            return Parse<[Value]>(
+                value: values,
+                rest: rest
+            )
         }
     }
 }
@@ -76,7 +80,7 @@ extension Pattern {
         self.init { text in
             guard text.hasPrefix(prefix) else { return nil }
             let suffixIndex = text.index(text.startIndex, offsetBy: prefix.characters.count)
-            return suffixIndex
+            return Result(rest: text[suffixIndex...])
         }
     }
 
@@ -85,7 +89,10 @@ extension Pattern {
     */
     public convenience init(count: Int) {
         self.init { text in
-            return text.index(text.startIndex, offsetBy: count, limitedBy: text.endIndex)
+            guard
+                let suffixIndex = text.index(text.startIndex, offsetBy: count, limitedBy: text.endIndex)
+                else { return nil }
+            return Result(rest: text[suffixIndex...])
         }
     }
 
@@ -93,14 +100,14 @@ extension Pattern {
      Create a pattern that does not parse anything and never fails.
     */
     public static var pure: Pattern {
-        return Pattern { text in text.startIndex }
+        return Pattern { text in Result(rest: text[...]) }
     }
 
     /**
      Create a pattern that fails on any string but "".
     */
     public static var empty: Pattern {
-        return Pattern { text in text.isEmpty ? text.endIndex : nil }
+        return Pattern { text in text.isEmpty ? Result(rest: text[...]) : nil }
     }
 
     /**
@@ -108,7 +115,7 @@ extension Pattern {
      - Note: is equivalent to `self || .pure`
     */
     public var optional: Pattern {
-        return Pattern { text in self.parsePrefix(text) ?? text.startIndex }
+        return Pattern { text in self.parsePrefix(text) ?? Result(rest: text[...]) }
     }
 }
 

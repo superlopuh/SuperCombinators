@@ -25,18 +25,18 @@ extension Parser {
         precondition(0 <= number, "Can't invoke parser negative number of times")
         return Parser<[Value]> { text in
             var values = [Value]()
-            var suffixIndex = text.startIndex
+            var rest = text[...]
 
             for _ in 0 ..< number {
-                guard let result = self.parseSuffix(of: text, after: suffixIndex) else { return nil }
+                guard let result = self.parsePrefix(rest) else { return nil }
                 values.append(result.value)
-                suffixIndex = result.suffixIndex
-                guard suffixIndex != text.endIndex else { break }
+                rest = result.rest
+                guard !rest.isEmpty else { break }
             }
 
-            return ParseResult<[Value]>(
+            return Parse<[Value]>(
                 value: values,
-                suffixIndex: suffixIndex
+                rest: rest
             )
         }
     }
@@ -47,17 +47,17 @@ extension Parser {
     public func zeroOrMore() -> Parser<[Value]> {
         return Parser<[Value]> { text in
             var values = [Value]()
-            var suffixIndex = text.startIndex
+            var rest = text[...]
 
-            while let next = self.parseSuffix(of: text, after: suffixIndex) {
+            while let next = self.parsePrefix(rest) {
                 values.append(next.value)
-                suffixIndex = next.suffixIndex
-                guard suffixIndex != text.endIndex else { break }
+                rest = next.rest
+                guard !rest.isEmpty else { break }
             }
 
-            return ParseResult<[Value]>(
+            return Parse<[Value]>(
                 value: values,
-                suffixIndex: suffixIndex
+                rest: rest
             )
         }
     }
@@ -70,15 +70,18 @@ extension Parser {
             guard let first = self.parsePrefix(text) else { return nil }
 
             var values = [first.value]
-            var suffixIndex = first.suffixIndex
+            var rest = first.rest
 
-            while let next = self.parseSuffix(of: text, after: suffixIndex) {
+            while let next = self.parsePrefix(rest) {
                 values.append(next.value)
-                suffixIndex = next.suffixIndex
-                guard suffixIndex != text.endIndex else { break }
+                rest = next.rest
+                guard !rest.isEmpty else { break }
             }
 
-            return ParseResult<[Value]>(value: values, suffixIndex: suffixIndex)
+            return Parse<[Value]>(
+                value: values,
+                rest: rest
+            )
         }
     }
 }

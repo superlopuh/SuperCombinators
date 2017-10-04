@@ -12,14 +12,7 @@ extension Parser {
      Parse using `self` then `pattern`, returning the value of `self.parse`.
     */
     public func and(_ pattern: Pattern) -> Parser {
-        return Parser { text in
-            guard
-                let r0 = self.parsePrefix(text),
-                let s1 = pattern.parseSuffix(of: text, after: r0.suffixIndex)
-                else { return nil }
-
-            return Result(value: r0.value, suffixIndex: s1)
-        }
+        return self.then(pattern).map { $0.0 }
     }
 
     /**
@@ -27,17 +20,7 @@ extension Parser {
      and `other.parse`.
     */
     public func and<OtherValue>(_ other: Parser<OtherValue>) -> Parser<(Value, OtherValue)> {
-        return Parser<(Value, OtherValue)> { text in
-            guard
-                let r0 = self.parsePrefix(text),
-                let r1 = other.parseSuffix(of: text, after: r0.suffixIndex)
-                else { return nil }
-
-            return ParseResult<(Value, OtherValue)>(
-                value: (r0.value, r1.value),
-                suffixIndex: r1.suffixIndex
-            )
-        }
+        return self.then(other)
     }
 }
 
@@ -47,26 +30,14 @@ extension Pattern {
      Parse using `self` then `parser`, returning the value of `parser.parse`.
     */
     public func and<NewValue>(_ parser: Parser<NewValue>) -> Parser<NewValue> {
-        return Parser<NewValue> { text in
-            guard
-                let s0 = self.parsePrefix(text),
-                let r1 = parser.parseSuffix(of: text, after: s0)
-                else { return nil }
-            return r1
-        }
+        return self.then(parser).map { $0.1 }
     }
 
     /**
      Parse using `self` then `pattern`.
     */
     public func and(_ pattern: Pattern) -> Pattern {
-        return Pattern { text in
-            guard
-                let s0 = self.parsePrefix(text),
-                let s1 = pattern.parseSuffix(of: text, after: s0)
-                else { return nil }
-            return s1
-        }
+        return self.then(pattern).pattern
     }
 }
 

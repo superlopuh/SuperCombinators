@@ -8,9 +8,9 @@
 
 private final class RecursiveParser<Value> {
 
-    private let generate: (RecursiveParser) -> (String) -> ParseResult<Value>?
+    private let generate: (RecursiveParser) -> (Substring) -> Parse<Value>?
 
-    private(set) lazy var parsePrefix: (String) -> ParseResult<Value>? = self.generate(self)
+    private(set) lazy var parsePrefix: (Substring) -> Parse<Value>? = self.generate(self)
 
     init(generateParser: @escaping (Parser<Value>) -> Parser<Value>) {
         self.generate = { rec in
@@ -39,9 +39,9 @@ extension Parser {
 
 private final class RecursivePattern {
 
-    private let generate: (RecursivePattern) -> (String) -> String.Index?
+    private let generate: (RecursivePattern) -> (Substring) -> Parse<()>?
 
-    private(set) lazy var parsePrefix: (String) -> String.Index? = self.generate(self)
+    private(set) lazy var parsePrefix: (Substring) -> Parse<()>? = self.generate(self)
 
     init(generateParser: @escaping (Pattern) -> Pattern) {
         self.generate = { rec in
