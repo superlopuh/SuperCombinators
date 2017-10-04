@@ -11,7 +11,7 @@
 */
 public final class Pattern {
 
-    public typealias Result = Parse<()>
+    public typealias Result = Parse<(), String>
     
     /**
      Parses a prefix of a string, returning the prefix's end index on success.
@@ -63,7 +63,7 @@ extension Parser {
                 guard !rest.isEmpty else { break }
             }
 
-            return Parse<[Value]>(
+            return Parser<[Value]>.Result(
                 value: values,
                 rest: rest
             )

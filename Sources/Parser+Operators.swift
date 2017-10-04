@@ -34,7 +34,7 @@ extension Parser {
                 guard !rest.isEmpty else { break }
             }
 
-            return Parse<[Value]>(
+            return Parser<[Value]>.Result(
                 value: values,
                 rest: rest
             )
@@ -55,7 +55,7 @@ extension Parser {
                 guard !rest.isEmpty else { break }
             }
 
-            return Parse<[Value]>(
+            return Parser<[Value]>.Result(
                 value: values,
                 rest: rest
             )
@@ -78,7 +78,7 @@ extension Parser {
                 guard !rest.isEmpty else { break }
             }
 
-            return Parse<[Value]>(
+            return Parser<[Value]>.Result(
                 value: values,
                 rest: rest
             )

@@ -13,9 +13,9 @@ protocol PatternProtocol: class {
 
     associatedtype Value
 
-    var parsePrefix: (Substring) -> Parse<Value>? { get }
+    var parsePrefix: (Substring) -> Parse<Value, String>? { get }
 
-    init(parsePrefix: @escaping (Substring) -> Parse<Value>?)
+    init(parsePrefix: @escaping (Substring) -> Parse<Value, String>?)
 }
 
 extension Pattern: PatternProtocol {
@@ -33,7 +33,7 @@ extension PatternProtocol {
                 let r1 = other.parsePrefix(r0.rest)
                 else { return nil }
             
-            return Parse<(Value, Other.Value)>(
+            return Parser<(Value, Other.Value)>.Result(
                 value: (r0.value, r1.value),
                 rest: r1.rest
             )
@@ -49,7 +49,7 @@ extension PatternProtocol {
     public var parser: Parser<String> {
         return Parser<String> { text in
             guard let result = self.parsePrefix(text) else { return nil }
-            return Parse<String>(
+            return Parse<String, String>(
                 value: String(text[..<result.rest.startIndex]),
                 rest: result.rest
             )

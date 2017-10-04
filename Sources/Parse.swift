@@ -7,13 +7,13 @@
 
 /**
  Contains the extracted value and remainder of the string.
-*/
-public struct Parse<Value> {
+ */
+public struct Parse<Value, Input: Collection> where Input.SubSequence: Collection {
     
     public let value: Value
-    public let rest: Substring
+    public let rest: Input.SubSequence
     
-    public init(value: Value, rest: Substring) {
+    public init(value: Value, rest: Input.SubSequence) {
         self.value = value
         self.rest = rest
     }
@@ -21,8 +21,8 @@ public struct Parse<Value> {
 
 extension Parse {
     
-    public func map<NewValue>(_ transform: @escaping (Value) -> NewValue) -> Parse<NewValue> {
-        return Parse<NewValue>(
+    public func map<NewValue>(_ transform: @escaping (Value) -> NewValue) -> Parse<NewValue, Input> {
+        return Parse<NewValue, Input>(
             value: transform(value),
             rest: rest
         )
@@ -31,8 +31,9 @@ extension Parse {
 
 extension Parse where Value == () {
     
-    init(rest: Substring) {
+    init(rest: Input.SubSequence) {
         self.value = ()
         self.rest = rest
     }
 }
+

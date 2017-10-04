@@ -11,7 +11,7 @@
 */
 public final class Parser<Value> {
 
-    public typealias Result = Parse<Value>
+    public typealias Result = Parse<Value, String>
 
     /**
      Parses a prefix of a string, returning the prefix's end index and value on success.
@@ -46,7 +46,7 @@ extension Parser {
     public var optional: Parser<Value?> {
         return Parser<Value?> { text in
             let result = self.parsePrefix(text)
-            return Parse<Value?>(
+            return Parser<Value?>.Result(
                 value: result?.value,
                 rest: result?.rest ?? text[...]
             )
