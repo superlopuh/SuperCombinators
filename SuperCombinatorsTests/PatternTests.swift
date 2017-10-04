@@ -61,4 +61,13 @@ class PatternTests: XCTestCase {
         )
         XCTAssert(hello.matches("hello"))
     }
+    
+    func testCharacterSet() {
+        let letters = Pattern.characters(in: .alphanumerics)
+        let spaces = Pattern.characters(in: .whitespaces)
+        
+        let myPattern = letters & ", " & letters.stringParser.separated(by: spaces)
+        
+        XCTAssert(myPattern.matches("hello, my name is"))
+    }
 }
