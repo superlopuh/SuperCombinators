@@ -6,15 +6,15 @@
 //
 //
 
-private final class RecursiveParser<Value> {
+private final class Recursive<P: ParserCombinator> {
 
-    private let generate: (RecursiveParser) -> (Substring) -> Parser<Value>.Result?
+    private let generate: (Recursive) -> (P.Input.SubSequence) -> P.Result?
 
-    private(set) lazy var parsePrefix: (Substring) -> Parser<Value>.Result? = self.generate(self)
+    private(set) lazy var parsePrefix: (P.Input.SubSequence) -> P.Result? = self.generate(self)
 
-    init(generateParser: @escaping (Parser<Value>) -> Parser<Value>) {
+    init(generateParser: @escaping (P) -> P) {
         self.generate = { rec in
-            let box = Parser<Value> { [unowned rec] text in
+            let box = P { [unowned rec] text in
                 return rec.parsePrefix(text)
             }
             return generateParser(box).parsePrefix
@@ -22,49 +22,17 @@ private final class RecursiveParser<Value> {
     }
 }
 
-extension Parser {
+extension ParserCombinator {
 
     /**
-     Creates a `Parser` for a recursive grammar.
+     Creates a `ParserCombinator` for a recursive grammar.
      
-     - Note: Within the scope of the closure, the input parser's `parse` method is not defined, and will crash if called.
+     - Note: Within the scope of the closure, the input parser's `parsePrefix` method is not defined, and will crash if called.
     */
-    public static func recursive(generateParser: @escaping (Parser) -> Parser) -> Parser {
-        let rec = RecursiveParser(generateParser: generateParser)
-        return Parser { text in
+    public static func recursive(generateParser: @escaping (Self) -> Self) -> Self {
+        let rec = Recursive(generateParser: generateParser)
+        return Self { text in
             return rec.parsePrefix(text)
         }
     }
 }
-
-private final class RecursivePattern {
-
-    private let generate: (RecursivePattern) -> (Substring) -> Pattern.Result?
-
-    private(set) lazy var parsePrefix: (Substring) -> Pattern.Result? = self.generate(self)
-
-    init(generateParser: @escaping (Pattern) -> Pattern) {
-        self.generate = { rec in
-            let box = Pattern { [unowned rec] text in
-                return rec.parsePrefix(text)
-            }
-            return generateParser(box).parsePrefix
-        }
-    }
-}
-
-extension Pattern {
-
-    /**
-     Creates a `Pattern` for a recursive grammar.
-
-     - Note: Within the scope of the closure, the input pattern's `parse` method is not defined, and will crash if called.
-     */
-    public static func recursive(generateParser: @escaping (Pattern) -> Pattern) -> Pattern {
-        let rec = RecursivePattern(generateParser: generateParser)
-        return Pattern { text in
-            return rec.parsePrefix(text)
-        }
-    }
-}
-

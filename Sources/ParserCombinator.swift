@@ -15,6 +15,10 @@ public protocol ParserCombinator {
     init(parsePrefix: @escaping (Input.SubSequence) -> Parse<Value, Input>?)
 }
 
+extension ParserCombinator {
+    typealias Result = Parse<Value, Input>
+}
+
 extension ParserCombinator where Input == String {
     
     /**
