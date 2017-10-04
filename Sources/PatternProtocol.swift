@@ -46,7 +46,7 @@ extension PatternProtocol {
     /**
      Captures the string parsed using `self`.
     */
-    public var stringParser: Parser<String> {
+    public var parser: Parser<String> {
         return Parser<String> { text in
             guard let result = self.parsePrefix(text) else { return nil }
             return Parse<String>(
