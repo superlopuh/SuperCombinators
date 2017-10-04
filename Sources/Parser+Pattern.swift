@@ -11,8 +11,18 @@ extension Parser {
     /**
      Parse using `self` then `pattern`, returning the value of `self.parse`.
     */
-    public func and(_ pattern: Pattern) -> Parser {
-        return self.then(pattern).map { $0.0 }
+    public func and(_ next: Pattern) -> Parser {
+        return Parser { text in
+            guard
+                let r0 = self.parsePrefix(text),
+                let r1 = next.parsePrefix(r0.rest)
+                else { return nil }
+            
+            return Parser.Result(
+                value: r0.value,
+                rest: r1.rest
+            )
+        }
     }
 
     /**
@@ -20,7 +30,17 @@ extension Parser {
      and `other.parse`.
     */
     public func and<OtherValue>(_ other: Parser<OtherValue>) -> Parser<(Value, OtherValue)> {
-        return self.then(other)
+        return Parser<(Value, OtherValue)> { text in
+            guard
+                let r0 = self.parsePrefix(text),
+                let r1 = other.parsePrefix(r0.rest)
+                else { return nil }
+            
+            return Parser<(Value, OtherValue)>.Result(
+                value: (r0.value, r1.value),
+                rest: r1.rest
+            )
+        }
     }
 }
 
@@ -29,15 +49,29 @@ extension Pattern {
     /**
      Parse using `self` then `parser`, returning the value of `parser.parse`.
     */
-    public func and<NewValue>(_ parser: Parser<NewValue>) -> Parser<NewValue> {
-        return self.then(parser).map { $0.1 }
+    public func and<NewValue>(_ next: Parser<NewValue>) -> Parser<NewValue> {
+        return Parser { text in
+            guard let r0 = self.parsePrefix(text) else { return nil }
+            
+            return next.parsePrefix(r0.rest)
+        }
     }
 
     /**
      Parse using `self` then `pattern`.
     */
-    public func and(_ pattern: Pattern) -> Pattern {
-        return self.then(pattern).pattern
+    public func and(_ next: Pattern) -> Pattern {
+        return Pattern { text in
+            guard
+                let r0 = self.parsePrefix(text),
+                let r1 = next.parsePrefix(r0.rest)
+                else { return nil }
+            
+            return Pattern.Result(
+                value: (),
+                rest: r1.rest
+            )
+        }
     }
 }
 

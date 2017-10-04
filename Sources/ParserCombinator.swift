@@ -17,23 +17,6 @@ public protocol ParserCombinator {
 
 extension ParserCombinator where Input == String {
     
-    func then<Other: ParserCombinator>(_ other: Other) -> Parser<(Value, Other.Value)> where Other.Input == Input {
-        return Parser<(Value, Other.Value)> { text in
-            guard
-                let r0 = self.parsePrefix(text),
-                let r1 = other.parsePrefix(r0.rest)
-                else { return nil }
-            
-            return Parser<(Value, Other.Value)>.Result(
-                value: (r0.value, r1.value),
-                rest: r1.rest
-            )
-        }
-    }
-}
-
-extension ParserCombinator where Input == String {
-    
     /**
      Captures the string parsed using `self`.
      */
