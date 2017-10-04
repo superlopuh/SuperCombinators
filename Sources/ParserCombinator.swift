@@ -10,13 +10,14 @@ postfix operator +
 
 public protocol ParserCombinator {
     associatedtype Value
-    var parsePrefix: (Substring) -> Parse<Value, String>? { get }
-    init(parsePrefix: @escaping (Substring) -> Parse<Value, String>?)
+    associatedtype Input: Collection where Input.SubSequence: Collection
+    var parsePrefix: (Input.SubSequence) -> Parse<Value, Input>? { get }
+    init(parsePrefix: @escaping (Input.SubSequence) -> Parse<Value, Input>?)
 }
 
-extension ParserCombinator {
+extension ParserCombinator where Input == String {
     
-    func then<Other: ParserCombinator>(_ other: Other) -> Parser<(Value, Other.Value)> {
+    func then<Other: ParserCombinator>(_ other: Other) -> Parser<(Value, Other.Value)> where Other.Input == Input {
         return Parser<(Value, Other.Value)> { text in
             guard
                 let r0 = self.parsePrefix(text),
@@ -31,7 +32,7 @@ extension ParserCombinator {
     }
 }
 
-extension ParserCombinator {
+extension ParserCombinator where Input == String {
     
     /**
      Captures the string parsed using `self`.

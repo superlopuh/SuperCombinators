@@ -8,4 +8,6 @@
 
 public protocol PatternProtocol: ParserCombinator where Value == () {}
 
-extension Pattern: PatternProtocol {}
+extension Pattern: PatternProtocol {
+    public typealias Input = String
+}
