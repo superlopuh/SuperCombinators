@@ -56,11 +56,6 @@ extension PatternProtocol {
         }
     }
 
-    /**
-     Parses the using the left-hand parser.
-     If the result exists, then return that.
-     Otherwise, attempt using right-hand pattern.
-    */
     public func matches(_ text: String) -> Bool {
         guard let result = parsePrefix(text[...]) else { return false }
         return result.rest.isEmpty
