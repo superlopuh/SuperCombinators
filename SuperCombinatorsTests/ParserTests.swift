@@ -16,8 +16,7 @@ class ParserTests: XCTestCase {
     }
     
     func testSimple() {
-        let _a: Pattern = "a"
-        let a = _a.capturePrefix
+        let a = Pattern(prefix: "a").capturePrefix
         let b = Pattern(prefix: "b").capturePrefix
         
         XCTAssertEqual("a", a.parse("a"))
@@ -37,7 +36,7 @@ class ParserTests: XCTestCase {
     }
     
     func testRecursive() {
-        let bracketed = Pattern.recursive { bracketed in
+        let bracketed = StringPattern.recursive { bracketed in
             let single = Pattern.recursive { single in
                 return "(" & single & ")" || "()"
             }

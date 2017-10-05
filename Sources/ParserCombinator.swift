@@ -9,44 +9,46 @@ postfix operator *
 postfix operator +
 
 public protocol ParserCombinator {
-    associatedtype Output
+    associatedtype Value
     associatedtype Input: Collection where Input.SubSequence: Collection
-    var parsePrefix: (Input.SubSequence) -> Parse<Output, Input>? { get }
-    init(parsePrefix: @escaping (Input.SubSequence) -> Parse<Output, Input>?)
+    var parsePrefix: (Input.SubSequence) -> Parse<Value, Input>? { get }
+    init(parsePrefix: @escaping (Input.SubSequence) -> Parse<Value, Input>?)
 }
 
 extension ParserCombinator {
-    public typealias Result = Parse<Output, Input>
+    public typealias Result = Parse<Value, Input>
 }
 
-extension ParserCombinator where Input == String {
+extension ParserCombinator {
     
     /**
      Captures the string parsed using `self`.
      */
-    public var capturePrefix: Parser<String> {
-        return Parser<String> { text in
-            guard let result = self.parsePrefix(text) else { return nil }
-            return Parse<String, String>(
-                value: String(text[..<result.rest.startIndex]),
+    public var capturePrefix: Parser<Input.SubSequence, Input> {
+        return Parser<Input.SubSequence, Input> { input in
+            guard let result = self.parsePrefix(input) else { return nil }
+            return Parse<Input.SubSequence, Input>(
+                value: input[..<result.rest.startIndex],
                 rest: result.rest
             )
         }
     }
     
-    public func matches(_ text: String) -> Bool {
-        guard let result = parsePrefix(text[...]) else { return false }
+    public func matches(_ input: Input) -> Bool {
+        guard let result = parsePrefix(input[...]) else { return false }
         return result.rest.isEmpty
     }
     
     public func or(_ other: Self) -> Self {
-        return Self { text in self.parsePrefix(text) ?? other.parsePrefix(text) }
+        return Self { input in
+            return self.parsePrefix(input) ?? other.parsePrefix(input)
+        }
     }
     
     public static func either(_ patterns: Self...) -> Self {
-        return Self { text in
+        return Self { input in
             for pattern in patterns {
-                if let result = pattern.parsePrefix(text) { return result }
+                if let result = pattern.parsePrefix(input) { return result }
             }
             return nil
         }

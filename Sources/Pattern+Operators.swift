@@ -11,7 +11,7 @@
  If the result exists, then return that.
  Otherwise, attempt using right-hand pattern.
 */
-public func || (lhs: Pattern, rhs: Pattern) -> Pattern {
+public func || <Input>(lhs: Pattern<Input>, rhs: Pattern<Input>) -> Pattern<Input> {
     return lhs.or(rhs)
 }
 
@@ -86,13 +86,13 @@ extension Pattern {
 /**
  Attemps to use `self` as many times as possible. Never fails.
 */
-public postfix func * (single: Pattern) -> Pattern {
+public postfix func * <Input>(single: Pattern<Input>) -> Pattern<Input> {
     return single.zeroOrMore()
 }
 
 /**
  Attemps to use `self` as many times as possible. Fails if there is not at least one match.
 */
-public postfix func + (single: Pattern) -> Pattern {
+public postfix func + <Input>(single: Pattern<Input>) -> Pattern<Input> {
     return single.oneOrMore()
 }

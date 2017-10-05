@@ -11,17 +11,14 @@ extension Parser {
     /**
      Parse using `self` then `pattern`, returning the value of `self.parse`.
     */
-    public func and(_ next: Pattern) -> Parser {
-        return Parser { text in
+    public func and(_ next: Pattern<Input>) -> Parser<Value, Input> {
+        return Parser<Value, Input> { text in
             guard
                 let r0 = self.parsePrefix(text),
                 let r1 = next.parsePrefix(r0.rest)
                 else { return nil }
             
-            return Parser.Result(
-                value: r0.value,
-                rest: r1.rest
-            )
+            return r1.map { _ in r0.value }
         }
     }
 
@@ -29,14 +26,14 @@ extension Parser {
      Parse using `self` then `other`, returning a tuple of values from `self.parse`
      and `other.parse`.
     */
-    public func and<OtherValue>(_ other: Parser<OtherValue>) -> Parser<(Value, OtherValue)> {
-        return Parser<(Value, OtherValue)> { text in
+    public func and<OtherValue>(_ other: Parser<OtherValue, Input>) -> Parser<(Value, OtherValue), Input> {
+        return Parser<(Value, OtherValue), Input> { text in
             guard
                 let r0 = self.parsePrefix(text),
                 let r1 = other.parsePrefix(r0.rest)
                 else { return nil }
             
-            return Parser<(Value, OtherValue)>.Result(
+            return Parse<(Value, OtherValue), Input>(
                 value: (r0.value, r1.value),
                 rest: r1.rest
             )
@@ -49,7 +46,7 @@ extension Pattern {
     /**
      Parse using `self` then `parser`, returning the value of `parser.parse`.
     */
-    public func and<NewValue>(_ next: Parser<NewValue>) -> Parser<NewValue> {
+    public func and<NewValue>(_ next: Parser<NewValue, Input>) -> Parser<NewValue, Input> {
         return Parser { text in
             guard let r0 = self.parsePrefix(text) else { return nil }
             
@@ -67,10 +64,7 @@ extension Pattern {
                 let r1 = next.parsePrefix(r0.rest)
                 else { return nil }
             
-            return Pattern.Result(
-                value: (),
-                rest: r1.rest
-            )
+            return Pattern.Result(rest: r1.rest)
         }
     }
 }
@@ -78,14 +72,14 @@ extension Pattern {
 /**
  Parse using `lhs` then `rhs`, returning the tuple containing both parsed values.
 */
-public func & <LHS, RHS>(lhs: Parser<LHS>, rhs: Parser<RHS>) -> Parser<(LHS, RHS)> {
+public func & <LHS, RHS, Input>(lhs: Parser<LHS, Input>, rhs: Parser<RHS, Input>) -> Parser<(LHS, RHS), Input> {
     return lhs.and(rhs)
 }
 
 /**
  Parse using `lhs` then `rhs`, returning the tuple containing all three parsed values.
  */
-public func && <LHS0, LHS1, RHS>(lhs: Parser<(LHS0, LHS1)>, rhs: Parser<RHS>) -> Parser<(LHS0, LHS1, RHS)> {
+public func && <LHS0, LHS1, RHS, Input>(lhs: Parser<(LHS0, LHS1), Input>, rhs: Parser<RHS, Input>) -> Parser<(LHS0, LHS1, RHS), Input> {
     return lhs.and(rhs).map { ($0.0.0, $0.0.1, $0.1) }
 }
 
@@ -93,20 +87,20 @@ public func && <LHS0, LHS1, RHS>(lhs: Parser<(LHS0, LHS1)>, rhs: Parser<RHS>) ->
  Parse using `self` then `other`, returning a tuple of values from `self.parse`
  and `other.parse`.
 */
-public func & <Value>(lhs: Pattern, rhs: Parser<Value>) -> Parser<Value> {
+public func & <Value, Input>(lhs: Pattern<Input>, rhs: Parser<Value, Input>) -> Parser<Value, Input> {
     return lhs.and(rhs)
 }
 
 /**
  Parse using `self` then `parser`, returning the value of `parser.parse`.
 */
-public func & <Value>(lhs: Parser<Value>, rhs: Pattern) -> Parser<Value> {
+public func & <Value, Input>(lhs: Parser<Value, Input>, rhs: Pattern<Input>) -> Parser<Value, Input> {
     return lhs.and(rhs)
 }
 
 /**
  Parse using `self` then `pattern`.
 */
-public func & (lhs: Pattern, rhs: Pattern) -> Pattern {
+public func & <Input>(lhs: Pattern<Input>, rhs: Pattern<Input>) -> Pattern<Input> {
     return lhs.and(rhs)
 }

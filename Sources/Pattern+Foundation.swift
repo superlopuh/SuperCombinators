@@ -8,7 +8,7 @@
 
 import Foundation
 
-extension Pattern {
+extension Pattern where Input == String {
 
     /**
      Matches all unicode characters `characterSet` does not contain.

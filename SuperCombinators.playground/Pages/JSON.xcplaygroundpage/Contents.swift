@@ -52,9 +52,9 @@ extension Int {
 }
 
 
-let json: Parser<Any>
+let json: StringParser<Any>
 do {
-    let number: Parser<Any>
+    let number: StringParser<Any>
     do {
         enum NumberFormat {
             case int(Int)
@@ -89,7 +89,7 @@ do {
         let int = (Pattern(prefix: "-").optional & digits).capturePrefix.map { Int($0)! }
         let exp = e & int
         let frac = "." & digits
-        let numberFormat = Parser<NumberFormat>.either(
+        let numberFormat = StringParser<NumberFormat>.either(
             (int & frac && exp).map(NumberFormat.intFracExp),
             (int & frac).map(NumberFormat.intFrac),
             (int & exp).map(NumberFormat.intExp),
@@ -98,55 +98,55 @@ do {
         number = numberFormat.map { $0.value }
     }
 
-    let string: Parser<String>
+    let string: StringParser<String>
     do {
         let stringChars = Pattern.characters(
             in: CharacterSet(charactersIn: "\\\"").inverted
-        ).capturePrefix
-        let escaped: Parser<String>
+        ).stringParser
+        let escaped: StringParser<String>
         do {
             let hexChars = CharacterSet(charactersIn: "0123456789abcdefABCDEF")
             let unicode = Pattern.character(in: hexChars)
                 .count(4)
                 .capturePrefix
                 .map { hex -> String in
-                    let number = Int(hex: hex)!
+                    let number = Int(hex: String(hex))!
                     let scalar = UnicodeScalar(UInt16(number))
                     return String(stringInterpolationSegment: scalar)
                 }
 
-            escaped = Parser<String>.either(
-                Parser<String>("\\\"", "\""),
-                Parser<String>("\\\\", "\\"),
-                Parser<String>("\\/", "/"),
-                Parser<String>("\\b", "b"),
-                Parser<String>("\\f", "f"),
-                Parser<String>("\\n", "\n"),
-                Parser<String>("\\r", "\r"),
-                Parser<String>("\\t", "\t"),
+            escaped = StringParser<String>.either(
+                StringParser<String>("\\\"", "\""),
+                StringParser<String>("\\\\", "\\"),
+                StringParser<String>("\\/", "/"),
+                StringParser<String>("\\b", "b"),
+                StringParser<String>("\\f", "f"),
+                StringParser<String>("\\n", "\n"),
+                StringParser<String>("\\r", "\r"),
+                StringParser<String>("\\t", "\t"),
                 "\\u" & unicode
             )
         }
 
-        let text = Parser<String>.recursive { text -> Parser<String> in
-            let prefix: Parser<String> = (stringChars & escaped).map(+)
+        let text = StringParser<String>.recursive { text -> StringParser<String> in
+            let prefix: StringParser<String> = (stringChars & escaped).map(+)
                 || stringChars
                 || escaped
             return (prefix & text).map(+)
                 || prefix
         }
 
-        string = "\"" & text & "\"" || Parser<String>("\"\"", "")
+        string = "\"" & text & "\"" || StringParser<String>("\"\"", "")
     }
 
     let space = Pattern
         .characters(in: .whitespacesAndNewlines)
         .optional
 
-    json = Parser<Any>.recursive { json in
-        let array: Parser<[Any]>
+    json = StringParser<Any>.recursive { json in
+        let array: StringParser<[Any]>
         do {
-            let empty = Parser<[Any]>("[" & space.optional & "]", [])
+            let empty = StringParser<[Any]>("[" & space.optional & "]", [])
             let notEmpty = "["
                 & space
                 & json.separated(by: "," & space)
@@ -155,9 +155,9 @@ do {
             array = empty || notEmpty
         }
 
-        let object: Parser<[String: Any]>
+        let object: StringParser<[String: Any]>
         do {
-            let empty = Parser<[String: Any]>("{" & space.optional & "}", [:])
+            let empty = StringParser<[String: Any]>("{" & space.optional & "}", [:])
             let pair = string & space & ":" & space & json
             let pairs = pair.separated(by: "," & space)
                 .map { pairs in [String: Any](pairs: pairs) }
@@ -173,8 +173,8 @@ do {
             || number
             || object.map { $0 as Any }
             || array.map { $0 as Any }
-            || Parser<Any>("true", true)
-            || Parser<Any>("false", false)
+            || StringParser<Any>("true", true)
+            || StringParser<Any>("false", false)
     }
 }
 

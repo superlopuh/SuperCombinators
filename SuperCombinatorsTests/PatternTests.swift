@@ -17,7 +17,7 @@ class PatternTests: XCTestCase {
     }
 
     func testSimple() {
-        let a: Pattern = "a"
+        let a = Pattern(prefix: "a")
         let b = Pattern(prefix: "b")
 
         XCTAssert(a.matches("a"))
@@ -35,7 +35,7 @@ class PatternTests: XCTestCase {
     }
 
     func testRecursive() {
-        let bracketed = Pattern.recursive { bracketed in
+        let bracketed = StringPattern.recursive { bracketed in
             let single = Pattern.recursive { single in
                 return "(" & single & ")" || "()"
             }

@@ -33,7 +33,7 @@ print(int.parse("-123")! + int.parse("321")!)
 
 // generalizing signed numbers
 
-func signed<Signed: SignedNumeric>(_ unsigned: Parser<Signed>) -> Parser<Signed> {
+func signed<Signed: SignedNumeric>(_ unsigned: StringParser<Signed>) -> StringParser<Signed> {
     return unsigned || ("-" & unsigned).map { -$0 }
 }
 
@@ -65,7 +65,7 @@ print(csv.parse("\"a\",1\n\"b,c\",23\n")!)
 
 
 
-let sum = Parser<Int>.recursive { sum in
+let sum = StringParser<Int>.recursive { sum in
     return (int & "+" & sum).map(+) || int
 }
 print(sum.parse("1+2+3")!)
