@@ -9,14 +9,14 @@ postfix operator *
 postfix operator +
 
 public protocol ParserCombinator {
-    associatedtype Value
+    associatedtype Output
     associatedtype Input: Collection where Input.SubSequence: Collection
-    var parsePrefix: (Input.SubSequence) -> Parse<Value, Input>? { get }
-    init(parsePrefix: @escaping (Input.SubSequence) -> Parse<Value, Input>?)
+    var parsePrefix: (Input.SubSequence) -> Parse<Output, Input>? { get }
+    init(parsePrefix: @escaping (Input.SubSequence) -> Parse<Output, Input>?)
 }
 
 extension ParserCombinator {
-    typealias Result = Parse<Value, Input>
+    typealias Result = Parse<Output, Input>
 }
 
 extension ParserCombinator where Input == String {

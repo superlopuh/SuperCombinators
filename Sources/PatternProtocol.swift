@@ -6,7 +6,7 @@
 //
 //
 
-public protocol PatternProtocol: ParserCombinator where Value == () {}
+public protocol PatternProtocol: ParserCombinator where Output == () {}
 
 extension Pattern: PatternProtocol {
     public typealias Input = String

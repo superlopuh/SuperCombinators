@@ -9,6 +9,7 @@ public protocol ParserProtocol: ParserCombinator {}
 
 extension Parser: ParserProtocol {
     
+    public typealias Output = Value
     public typealias Input = String
     
     public var matchPrefix: (Substring) -> Substring? {
