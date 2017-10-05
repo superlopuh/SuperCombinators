@@ -9,9 +9,10 @@
 /**
  Parses a prefix of a substring, extracting a value, and returning the remainder of the string.
 */
-public final class Parser<Value> {
-
-    public typealias Result = Parse<Value, String>
+public final class Parser<Value>: ParserProtocol {
+    
+    public typealias Output = Value
+    public typealias Input = String
 
     /**
      Parses a prefix of a string, returning the prefix's end index and value on success.

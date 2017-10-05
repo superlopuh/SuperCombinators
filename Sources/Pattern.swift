@@ -9,9 +9,10 @@
 /**
  Parses a prefix of a string, returning the prefix's end index on success.
 */
-public final class Pattern {
-
-    public typealias Result = Parse<(), String>
+public final class Pattern: PatternProtocol {
+    
+    public typealias Output = ()
+    public typealias Input = String
     
     /**
      Parses a prefix of a string, returning the prefix's end index on success.

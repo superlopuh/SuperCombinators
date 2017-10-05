@@ -16,7 +16,7 @@ public protocol ParserCombinator {
 }
 
 extension ParserCombinator {
-    typealias Result = Parse<Output, Input>
+    public typealias Result = Parse<Output, Input>
 }
 
 extension ParserCombinator where Input == String {
