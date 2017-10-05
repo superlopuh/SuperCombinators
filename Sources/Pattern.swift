@@ -70,32 +70,6 @@ extension Parser {
     }
 }
 
-extension Pattern where Input == String {
-
-    /**
-     Create a pattern that matches the prefix of a string if it is equal to the prefix provided.
-     */
-    public convenience init(prefix: String) {
-        self.init { text in
-            guard text.hasPrefix(prefix) else { return nil }
-            let suffixIndex = text.index(text.startIndex, offsetBy: prefix.characters.count)
-            return Result(rest: text[suffixIndex...])
-        }
-    }
-
-    /**
-     Create a pattern that returns the prefix composed of `count` Characters, and fails if the input is not long enough.
-    */
-    public convenience init(count: Int) {
-        self.init { input in
-            guard
-                let suffixIndex = input.index(input.startIndex, offsetBy: count, limitedBy: input.endIndex)
-                else { return nil }
-            return Result(rest: input[suffixIndex...])
-        }
-    }
-}
-
 extension Pattern {
 
     /**

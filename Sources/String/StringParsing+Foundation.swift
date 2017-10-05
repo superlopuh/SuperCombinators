@@ -1,5 +1,5 @@
 //
-//  Pattern+Foundation.swift
+//  StringParsing+Foundation.swift
 //  SuperCombinators
 //
 //  Created by Alexandre Lopoukhine on 09/02/2017.
