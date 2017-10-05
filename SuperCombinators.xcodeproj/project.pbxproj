@@ -173,12 +173,12 @@
 			children = (
 				D91E8B581F84EBEE00A3E90C /* Parse.swift */,
 				A64BF24A1E573ADD00FAF67C /* Parser.swift */,
+				D9BF4AD61F853EF0001F6095 /* ParserCombinator.swift */,
 				A64BF24B1E573ADD00FAF67C /* Parser+Operators.swift */,
 				A64BF24C1E573ADD00FAF67C /* Parser+Pattern.swift */,
 				A64BF24D1E573ADD00FAF67C /* Pattern.swift */,
 				A64BF24F1E573ADD00FAF67C /* Pattern+Operators.swift */,
 				A64BF2511E573ADD00FAF67C /* Recursive.swift */,
-				D9BF4AD61F853EF0001F6095 /* ParserCombinator.swift */,
 				D9539BF11F868ACB00E8C364 /* String */,
 				A64BF2411E57348800FAF67C /* Info-iOS.plist */,
 				A64BF2421E57348800FAF67C /* Info-macOS.plist */,
