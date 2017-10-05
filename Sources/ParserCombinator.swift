@@ -24,7 +24,7 @@ extension ParserCombinator where Input == String {
     /**
      Captures the string parsed using `self`.
      */
-    public var parser: Parser<String> {
+    public var capturePrefix: Parser<String> {
         return Parser<String> { text in
             guard let result = self.parsePrefix(text) else { return nil }
             return Parse<String, String>(

@@ -12,13 +12,13 @@ import XCTest
 class ParserTests: XCTestCase {
     
     func testEmpty() {
-        XCTAssert(Pattern.empty.parser.matches(""))
+        XCTAssert(Pattern.empty.capturePrefix.matches(""))
     }
     
     func testSimple() {
         let _a: Pattern = "a"
-        let a = _a.parser
-        let b = Pattern(prefix: "b").parser
+        let a = _a.capturePrefix
+        let b = Pattern(prefix: "b").capturePrefix
         
         XCTAssertEqual("a", a.parse("a"))
         
@@ -68,7 +68,7 @@ class ParserTests: XCTestCase {
         let letters = Pattern.characters(in: .alphanumerics)
         let spaces = Pattern.characters(in: .whitespaces)
         
-        let myParser = letters & ", " & letters.parser.separated(by: spaces)
+        let myParser = letters & ", " & letters.capturePrefix.separated(by: spaces)
         
         let _parse = myParser.parse("hello, my name is")
         XCTAssertNotNil(_parse)
@@ -80,7 +80,7 @@ class ParserTests: XCTestCase {
     
     func testUIntParser() {
         let digits = Pattern.characters(in: .decimalDigits)
-        let uint = digits.parser.map { Int($0)! }
+        let uint = digits.capturePrefix.map { Int($0)! }
         
         let _parse = uint.parse("123")
         
@@ -93,7 +93,7 @@ class ParserTests: XCTestCase {
     
     func testFloatParser() {
         let digits = Pattern.characters(in: .decimalDigits)
-        let uint = digits.parser.map { Int($0)! }
+        let uint = digits.capturePrefix.map { Int($0)! }
         
         let ufloat0 = uint.map(Double.init)
         

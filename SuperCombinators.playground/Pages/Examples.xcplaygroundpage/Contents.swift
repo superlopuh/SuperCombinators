@@ -4,7 +4,7 @@ import SuperCombinators
 // basic floating point parser
 
 let digits = Pattern.characters(in: .decimalDigits)
-let uint = digits.parser.map { Int($0)! }
+let uint = digits.capturePrefix.map { Int($0)! }
 let ufloat0 = uint.map(Double.init)
 
 let ufloat1 = ("." & ufloat0).map { float -> Double in
@@ -46,7 +46,7 @@ let int1 = signed(uint.map { Int($0) })
 let notQuote = Pattern.characters(
     notIn: CharacterSet(charactersIn: "\"")
 )
-let string = "\"" & notQuote.parser & "\""
+let string = "\"" & notQuote.capturePrefix & "\""
 
 print(string.parse("\"bla\"")!)
 // prints bla

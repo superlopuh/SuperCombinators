@@ -85,8 +85,8 @@ do {
         }
 
         let e = "e" || "e+" || "E" || "E+"
-        let digits = Pattern.characters(in: .decimalDigits).parser.map { Int($0)! }
-        let int = (Pattern(prefix: "-").optional & digits).parser.map { Int($0)! }
+        let digits = Pattern.characters(in: .decimalDigits).capturePrefix.map { Int($0)! }
+        let int = (Pattern(prefix: "-").optional & digits).capturePrefix.map { Int($0)! }
         let exp = e & int
         let frac = "." & digits
         let numberFormat = Parser<NumberFormat>.either(
@@ -102,13 +102,13 @@ do {
     do {
         let stringChars = Pattern.characters(
             in: CharacterSet(charactersIn: "\\\"").inverted
-        ).parser
+        ).capturePrefix
         let escaped: Parser<String>
         do {
             let hexChars = CharacterSet(charactersIn: "0123456789abcdefABCDEF")
             let unicode = Pattern.character(in: hexChars)
                 .count(4)
-                .parser
+                .capturePrefix
                 .map { hex -> String in
                     let number = Int(hex: hex)!
                     let scalar = UnicodeScalar(UInt16(number))
