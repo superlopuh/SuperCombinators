@@ -22,14 +22,6 @@ public final class Parser<Value>: ParserProtocol {
     public init(parsePrefix: @escaping (Substring) -> Result?) {
         self.parsePrefix = parsePrefix
     }
-
-    /**
-     Parses a prefix of a string, returning the string's value only if it exists for the whole string.
-     */
-    public func parse(_ text: String) -> Value? {
-        guard let result = parsePrefix(text[...]), result.rest.isEmpty else { return nil }
-        return result.value
-    }
 }
 
 extension Parser {
