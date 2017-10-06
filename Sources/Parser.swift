@@ -62,6 +62,15 @@ extension Parser {
             return self.parsePrefix(text)?.map(transform)
         }
     }
+    
+    /**
+     Creates a `Parser` that parses the same prefix as `self`, and contains the transformed value if it is not nil.
+     */
+    public func flatMap<NewValue>(_ transform: @escaping (Value) -> NewValue?) -> Parser<NewValue, Input> {
+        return Parser<NewValue, Input> { text in
+            return self.parsePrefix(text)?.flatMap(transform)
+        }
+    }
 
     /**
      Creates a `Parser` that 
