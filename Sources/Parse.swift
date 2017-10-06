@@ -36,4 +36,3 @@ extension Parse where Value == () {
         self.rest = rest
     }
 }
-
