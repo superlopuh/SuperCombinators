@@ -31,7 +31,7 @@ extension Parse {
 
 extension Parse where Value == () {
     
-    init(rest: Input.SubSequence) {
+    public init(rest: Input.SubSequence) {
         self.value = ()
         self.rest = rest
     }
