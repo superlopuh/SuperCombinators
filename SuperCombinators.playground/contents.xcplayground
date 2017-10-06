@@ -2,6 +2,7 @@
 <playground version='6.0' target-platform='ios' last-migration='0900'>
     <pages>
         <page name='JSON'/>
-        <page name='Untitled Page'/>
+        <page name='UTF'/>
+        <page name='Examples'/>
     </pages>
 </playground>
