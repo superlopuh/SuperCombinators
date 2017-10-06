@@ -27,6 +27,14 @@ extension Parse {
             rest: rest
         )
     }
+    
+    public func flatMap<NewValue>(_ transform: @escaping (Value) -> NewValue?) -> Parse<NewValue, Input>? {
+        guard let newValue = transform(value) else { return nil }
+        return Parse<NewValue, Input>(
+            value: newValue,
+            rest: rest
+        )
+    }
 }
 
 extension Parse where Value == () {
