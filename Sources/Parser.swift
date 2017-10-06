@@ -96,6 +96,19 @@ extension Parser {
     }
 }
 
+extension Parser where Input.Element == Value {
+    
+    public static var single: Parser {
+        return Parser { input in
+            guard let first = input.first else { return nil }
+            return Parser.Result(
+                value: first,
+                rest: input.dropFirst()
+            )
+        }
+    }
+}
+
 // MARK: Apply
 
 /**

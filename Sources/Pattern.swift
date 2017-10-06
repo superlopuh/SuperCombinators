@@ -78,6 +78,13 @@ extension Pattern {
     public static var pure: Pattern {
         return Pattern { text in Result(rest: text[...]) }
     }
+    
+    public static var single: Pattern {
+        return Pattern { input in
+            guard !input.isEmpty else { return nil }
+            return Pattern.Result(rest: input.dropFirst())
+        }
+    }
 
     /**
      Create a pattern that fails on any string but "".
