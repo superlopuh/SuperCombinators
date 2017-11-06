@@ -4,5 +4,6 @@
         <page name='JSON'/>
         <page name='UTF'/>
         <page name='Examples'/>
+        <page name='Coding'/>
     </pages>
 </playground>
