@@ -148,11 +148,26 @@ do {
     let encoded = twoCharacters.encoder.encode(decoded)
 }
 
+extension SerialEncoder where Value == Output.Element {
+
+    static var single: SerialEncoder {
+        return SerialEncoder { value in
+            var output = Output()
+            output.append(value)
+            return output
+        }
+    }
+}
+
+extension SerialCoder where Value == Medium.Element {
+
+    static var single: SerialCoder {
+        return SerialCoder(encoder: .single, decoder: .single)
+    }
+}
+
 do {
-    let octet = SerialCoder<UInt8, Data>(
-        encoder: SerialEncoder<UInt8, Data> { octet in Data([octet]) },
-        decoder: .single
-    )
+    let octet = SerialCoder<UInt8, Data>.single
 
     let uInt16BigEndian: SerialCoder<UInt16, Data> = octet.then(octet)
         .map(
