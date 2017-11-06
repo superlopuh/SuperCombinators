@@ -133,21 +133,6 @@ extension SerialCoder {
     }
 }
 
-do {
-    let character = SerialCoder(
-        encoder: SerialEncoder<Character, String> { String($0) },
-        decoder: .single
-    )
-
-    let twoCharacters = character.then(character)
-
-    let ab = "ab"
-
-    let decoded = twoCharacters.decoder.parse(ab)!
-
-    let encoded = twoCharacters.encoder.encode(decoded)
-}
-
 extension SerialEncoder where Value == Output.Element {
 
     static var single: SerialEncoder {
@@ -157,6 +142,18 @@ extension SerialEncoder where Value == Output.Element {
             return output
         }
     }
+}
+
+do {
+    let character = SerialCoder<Character, String>.single
+
+    let twoCharacters = character.then(character)
+
+    let ab = "ab"
+
+    let decoded = twoCharacters.decoder.parse(ab)!
+
+    let encoded = twoCharacters.encoder.encode(decoded)
 }
 
 extension SerialCoder where Value == Medium.Element {
