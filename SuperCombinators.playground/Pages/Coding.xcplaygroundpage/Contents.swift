@@ -237,6 +237,84 @@ do {
     uInt16BigEndian.decode(encoded)!
 }
 
+enum Either<LHS, RHS> {
+    case lhs(LHS)
+    case rhs(RHS)
+}
 
+extension SerialEncoder {
+
+    static func either<LHS, RHS>(lhsEncoder: SerialEncoder<LHS, Output>, rhsEncoder: SerialEncoder<RHS, Output>) -> SerialEncoder<Either<LHS, RHS>, Output> {
+        return SerialEncoder<Either<LHS, RHS>, Output> { either in
+            switch either {
+            case let .lhs(lhs): return lhsEncoder.encode(lhs)
+            case let .rhs(rhs): return rhsEncoder.encode(rhs)
+            }
+        }
+    }
+}
+
+extension SerialPatternEncoder {
+
+    static func value(_ element: Output.Element) -> SerialPatternEncoder {
+        return SerialPatternEncoder {
+            var output = Output()
+            output.append(element)
+            return output
+        }
+    }
+}
+
+extension SerialPatternCoder {
+
+    static func value(_ element: Medium.Element) -> SerialPatternCoder {
+        return SerialPatternCoder(encoder: .value(element), decoder: .single)
+    }
+}
+
+do {
+    enum OneOrTwo {
+        case one(Int)
+        case two((Int, Int))
+    }
+
+    enum Tag: Int { case one = 1, two = 2 }
+
+    let one = SerialCoder<Int, [Int]>.single
+    let two = one & one
+
+    let tag: SerialCoder<Tag, [Int]> = one.map(
+        transform: { Tag(rawValue: $0)! },
+        inverse: { $0.rawValue }
+    )
+
+    let oneOrTwoDecoder = tag.decoder.flatMap { tag -> SerialDecoder<OneOrTwo, [Int]> in
+        switch tag {
+        case .one:
+            return one.decoder.map(OneOrTwo.one)
+        case .two:
+            return two.decoder.map(OneOrTwo.two)
+        }
+    }
+
+    let oneOrTwoEncoder = SerialEncoder<OneOrTwo, [Int]> { oneOrTwo in
+        switch oneOrTwo {
+        case .one(let _one):
+            return (tag & one).encoder.encode((.one, _one))
+        case .two(let _two):
+            return (tag & two).encoder.encode((.two, _two))
+        }
+    }
+
+    let oneOrTwo = SerialCoder<OneOrTwo, [Int]>(
+        encoder: oneOrTwoEncoder,
+        decoder: oneOrTwoDecoder
+    )
+
+    let original = OneOrTwo.two((12, 13))
+
+    let encoded = oneOrTwo.encode(original)
+    let decoded = oneOrTwo.decode(encoded)!
+}
 
 //: [Next](@next)
