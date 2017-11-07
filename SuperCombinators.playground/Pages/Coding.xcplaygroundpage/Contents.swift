@@ -58,6 +58,22 @@ extension SerialPatternEncoder {
     }
 }
 
+func & <LHS, RHS, O>(lhs: SerialEncoder<LHS, O>, rhs: SerialEncoder<RHS, O>) -> SerialEncoder<(LHS, RHS), O> {
+    return lhs.then(rhs)
+}
+
+func & <V, O>(lhs: SerialEncoder<V, O>, rhs: SerialPatternEncoder<O>) -> SerialEncoder<V, O> {
+    return lhs.then(rhs)
+}
+
+func & <V, O>(lhs: SerialPatternEncoder<O>, rhs: SerialEncoder<V, O>) -> SerialEncoder<V, O> {
+    return lhs.then(rhs)
+}
+
+func & <O>(lhs: SerialPatternEncoder<O>, rhs: SerialPatternEncoder<O>) -> SerialPatternEncoder<O> {
+    return lhs.then(rhs)
+}
+
 extension SerialEncoder {
 
     func map<OldValue>(transform: @escaping (OldValue) -> Value) -> SerialEncoder<OldValue, Output> {
@@ -117,10 +133,50 @@ extension SerialCoder {
 
     func then<OtherValue>(_ other: SerialCoder<OtherValue, Medium>) -> SerialCoder<(Value, OtherValue), Medium> {
         return SerialCoder<(Value, OtherValue), Medium>(
-            encoder: self.encoder.then(other.encoder),
-            decoder: self.decoder.and(other.decoder)
+            encoder: self.encoder & other.encoder,
+            decoder: self.decoder & other.decoder
         )
     }
+
+    func then(_ other: SerialPatternCoder<Medium>) -> SerialCoder<Value, Medium> {
+        return SerialCoder<Value, Medium>(
+            encoder: self.encoder & other.encoder,
+            decoder: self.decoder & other.decoder
+        )
+    }
+}
+
+extension SerialPatternCoder {
+
+    func then<Value>(_ other: SerialCoder<Value, Medium>) -> SerialCoder<Value, Medium> {
+        return SerialCoder<Value, Medium>(
+            encoder: self.encoder & other.encoder,
+            decoder: self.decoder & other.decoder
+        )
+    }
+
+    func then(_ other: SerialPatternCoder<Medium>) -> SerialPatternCoder<Medium> {
+        return SerialPatternCoder<Medium>(
+            encoder: self.encoder & other.encoder,
+            decoder: self.decoder & other.decoder
+        )
+    }
+}
+
+func & <LHS, RHS, O>(lhs: SerialCoder<LHS, O>, rhs: SerialCoder<RHS, O>) -> SerialCoder<(LHS, RHS), O> {
+    return lhs.then(rhs)
+}
+
+func & <V, O>(lhs: SerialCoder<V, O>, rhs: SerialPatternCoder<O>) -> SerialCoder<V, O> {
+    return lhs.then(rhs)
+}
+
+func & <V, O>(lhs: SerialPatternCoder<O>, rhs: SerialCoder<V, O>) -> SerialCoder<V, O> {
+    return lhs.then(rhs)
+}
+
+func & <O>(lhs: SerialPatternCoder<O>, rhs: SerialPatternCoder<O>) -> SerialPatternCoder<O> {
+    return lhs.then(rhs)
 }
 
 extension SerialCoder {
@@ -144,18 +200,6 @@ extension SerialEncoder where Value == Output.Element {
     }
 }
 
-do {
-    let character = SerialCoder<Character, String>.single
-
-    let twoCharacters = character.then(character)
-
-    let ab = "ab"
-
-    let decoded = twoCharacters.decoder.parse(ab)!
-
-    let encoded = twoCharacters.encoder.encode(decoded)
-}
-
 extension SerialCoder where Value == Medium.Element {
 
     static var single: SerialCoder {
@@ -164,9 +208,21 @@ extension SerialCoder where Value == Medium.Element {
 }
 
 do {
+    let character = SerialCoder<Character, String>.single
+
+    let twoCharacters = character & character
+
+    let ab = "ab"
+
+    let decoded = twoCharacters.decoder.parse(ab)!
+
+    twoCharacters.encoder.encode(decoded)
+}
+
+do {
     let octet = SerialCoder<UInt8, Data>.single
 
-    let uInt16BigEndian: SerialCoder<UInt16, Data> = octet.then(octet)
+    let uInt16BigEndian: SerialCoder<UInt16, Data> = (octet & octet)
         .map(
             transform: { bytes -> UInt16 in UInt16(bytes.0) << 8 + UInt16(bytes.1) },
             inverse: { uInt16 -> (UInt8, UInt8) in
@@ -178,7 +234,7 @@ do {
 
     let original: UInt16 = 0x0C0D
     let encoded = uInt16BigEndian.encode(original)
-    let decoded = uInt16BigEndian.decode(encoded)!
+    uInt16BigEndian.decode(encoded)!
 }
 
 
