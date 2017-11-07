@@ -22,6 +22,25 @@ final class SerialPatternEncoder<Output: RangeReplaceableCollection> {
 
 extension SerialEncoder {
 
+    var array: SerialEncoder<[Value], Output> {
+        return SerialEncoder<[Value], Output> { values in
+            var output = Output()
+
+            for value in values {
+                output.append(contentsOf: self.encode(value))
+            }
+
+            return output
+        }
+    }
+}
+
+postfix func * <Value, Output> (encoder: SerialEncoder<Value, Output>) -> SerialEncoder<[Value], Output> {
+    return encoder.array
+}
+
+extension SerialEncoder {
+
     func then<OtherValue>(_ other: SerialEncoder<OtherValue, Output>) -> SerialEncoder<(Value, OtherValue), Output> {
         return SerialEncoder<(Value, OtherValue), Output> { (value, otherValue) in
             var output = self.encode(value)
@@ -76,7 +95,7 @@ func & <O>(lhs: SerialPatternEncoder<O>, rhs: SerialPatternEncoder<O>) -> Serial
 
 extension SerialEncoder {
 
-    func map<OldValue>(transform: @escaping (OldValue) -> Value) -> SerialEncoder<OldValue, Output> {
+    func contramap<OldValue>(_ transform: @escaping (OldValue) -> Value) -> SerialEncoder<OldValue, Output> {
         return SerialEncoder<OldValue, Output> { oldValue in
             return self.encode(transform(oldValue))
         }
@@ -108,6 +127,13 @@ final class SerialCoder<Value, Medium: RangeReplaceableCollection> where Medium.
     }
 }
 
+extension SerialEncoder {
+
+    func pattern(_ value: Value) -> SerialPatternEncoder<Output> {
+        return SerialPatternEncoder<Output> { self.encode(value) }
+    }
+}
+
 extension SerialCoder {
 
     func encode(_ value: Value) -> Medium {
@@ -127,6 +153,20 @@ extension SerialCoder {
             decoder: Parser<Value, Medium>(parsePrefix: decode)
         )
     }
+}
+
+extension SerialCoder {
+
+    var array: SerialCoder<[Value], Medium> {
+        return SerialCoder<[Value], Medium>(
+            encoder: encoder*,
+            decoder: decoder*
+        )
+    }
+}
+
+postfix func * <Value, Medium> (coder: SerialCoder<Value, Medium>) -> SerialCoder<[Value], Medium> {
+    return coder.array
 }
 
 extension SerialCoder {
@@ -183,7 +223,7 @@ extension SerialCoder {
 
     func map<NewValue>(transform: @escaping (Value) -> NewValue, inverse: @escaping (NewValue) -> Value) -> SerialCoder<NewValue, Medium> {
         return SerialCoder<NewValue, Medium>(
-            encoder: encoder.map(transform: inverse),
+            encoder: encoder.contramap(inverse),
             decoder: decoder.map(transform)
         )
     }
@@ -237,20 +277,81 @@ do {
     uInt16BigEndian.decode(encoded)!
 }
 
+extension SerialEncoder {
+
+    func and(_ other: SerialEncoder) -> SerialEncoder {
+        return SerialEncoder { value in
+            var output = self.encode(value)
+            output.append(contentsOf: other.encode(value))
+            return output
+        }
+    }
+
+    func or<OtherValue>(_ other: SerialEncoder<OtherValue, Output>) -> SerialEncoder<Either<Value, OtherValue>, Output> {
+        return SerialEncoder<Either<Value, OtherValue>, Output> { value in
+            return value.collapse(self.encode, other.encode)
+        }
+    }
+}
+
 enum Either<LHS, RHS> {
     case lhs(LHS)
     case rhs(RHS)
+
+    var tag: Tag {
+        switch self {
+        case .lhs: return .lhs
+        case .rhs: return .rhs
+        }
+    }
+
+    func collapse<V>(_ lhsTransform: (LHS) -> V, _ rhsTransform: (RHS) -> V) -> V {
+        switch self {
+        case .lhs(let lhs):
+            return lhsTransform(lhs)
+        case .rhs(let rhs):
+            return rhsTransform(rhs)
+        }
+    }
 }
 
-extension SerialEncoder {
+enum Tag {
+    case lhs, rhs
 
-    static func either<LHS, RHS>(lhsEncoder: SerialEncoder<LHS, Output>, rhsEncoder: SerialEncoder<RHS, Output>) -> SerialEncoder<Either<LHS, RHS>, Output> {
-        return SerialEncoder<Either<LHS, RHS>, Output> { either in
-            switch either {
-            case let .lhs(lhs): return lhsEncoder.encode(lhs)
-            case let .rhs(rhs): return rhsEncoder.encode(rhs)
+    func choose<LHS, RHS>(_ values: (LHS, RHS)) -> Either<LHS, RHS> {
+        switch self {
+        case .lhs: return .lhs(values.0)
+        case .rhs: return .rhs(values.1)
+        }
+    }
+}
+
+extension SerialDecoder where Value == Tag {
+
+    func thenEither<LHS, RHS>(_ lhs: SerialDecoder<LHS, Input>, _ rhs: SerialDecoder<RHS, Input>) -> SerialDecoder<Either<LHS, RHS>, Input> {
+        return self.flatMap { tag -> SerialDecoder<Either<LHS, RHS>, Input> in
+            switch tag {
+            case .lhs: return lhs.map(Either.lhs)
+            case .rhs: return rhs.map(Either.rhs)
             }
         }
+    }
+}
+
+extension SerialEncoder where Value == Tag {
+
+    func thenEither<LHS, RHS>(_ lhs: SerialEncoder<LHS, Output>, _ rhs: SerialEncoder<RHS, Output>) -> SerialEncoder<Either<LHS, RHS>, Output> {
+        return self.contramap({ $0.tag }).and(lhs.or(rhs))
+    }
+}
+
+extension SerialCoder where Value == Tag {
+
+    func thenEither<LHS, RHS>(_ lhs: SerialCoder<LHS, Medium>, _ rhs: SerialCoder<RHS, Medium>) -> SerialCoder<Either<LHS, RHS>, Medium> {
+        return SerialCoder<Either<LHS, RHS>, Medium>(
+            encoder: self.encoder.thenEither(lhs.encoder, rhs.encoder),
+            decoder: self.decoder.thenEither(lhs.decoder, rhs.decoder)
+        )
     }
 }
 
@@ -272,49 +373,57 @@ extension SerialPatternCoder {
     }
 }
 
-do {
-    enum OneOrTwo {
-        case one(Int)
-        case two((Int, Int))
-    }
+extension SerialCoder {
 
-    enum Tag: Int { case one = 1, two = 2 }
+    func helpsDecodeFollowing<Following>(ambiguousEncoder: SerialEncoder<Following, Medium>, contramap: @escaping (Following) -> Value, decoderFlatMap: @escaping (Value) -> SerialDecoder<Following, Medium>) -> SerialCoder<Following, Medium> {
+        let encoder = self.encoder.contramap(contramap).and(ambiguousEncoder)
+        let decoder = self.decoder.flatMap(decoderFlatMap)
+        return SerialCoder<Following, Medium>(
+            encoder: encoder,
+            decoder: decoder
+        )
+    }
+}
+
+func id<Value>(_ value: Value) -> Value { return value }
+func duplicate<Value>(_ value: Value) -> (Value, Value) { return (value, value) }
+
+do {
+    typealias OneOrTwo = Either<Int, (Int, Int)>
 
     let one = SerialCoder<Int, [Int]>.single
     let two = one & one
 
     let tag: SerialCoder<Tag, [Int]> = one.map(
-        transform: { Tag(rawValue: $0)! },
-        inverse: { $0.rawValue }
+        transform: { 1 == $0 ? .lhs : .rhs },
+        inverse: { Tag.lhs == $0 ? 1 : 2 }
     )
 
-    let oneOrTwoDecoder = tag.decoder.flatMap { tag -> SerialDecoder<OneOrTwo, [Int]> in
-        switch tag {
-        case .one:
-            return one.decoder.map(OneOrTwo.one)
-        case .two:
-            return two.decoder.map(OneOrTwo.two)
-        }
-    }
+    let oneOrTwo = tag.thenEither(one, two)
 
-    let oneOrTwoEncoder = SerialEncoder<OneOrTwo, [Int]> { oneOrTwo in
-        switch oneOrTwo {
-        case .one(let _one):
-            return (tag & one).encoder.encode((.one, _one))
-        case .two(let _two):
-            return (tag & two).encoder.encode((.two, _two))
-        }
-    }
-
-    let oneOrTwo = SerialCoder<OneOrTwo, [Int]>(
-        encoder: oneOrTwoEncoder,
-        decoder: oneOrTwoDecoder
-    )
-
-    let original = OneOrTwo.two((12, 13))
+    let original = OneOrTwo.rhs((12, 13))
 
     let encoded = oneOrTwo.encode(original)
     let decoded = oneOrTwo.decode(encoded)!
+}
+
+do {
+    let int = SerialCoder<Int, [Int]>.single
+
+    let arrayDecoder = int.decoder*
+    let count = int
+    let arrayWithCount = count.helpsDecodeFollowing(
+        ambiguousEncoder: int.encoder.array,
+        contramap: { $0.count },
+        decoderFlatMap: { count in int.decoder.count(count) }
+    )
+
+    let arrays = arrayWithCount*
+
+    let original = [[2], [4, 5, 6]]
+
+    let encoded = arrays.encode(original)
+    arrays.decode(encoded)!
 }
 
 //: [Next](@next)
